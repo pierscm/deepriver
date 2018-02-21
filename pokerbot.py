@@ -3,6 +3,9 @@ from pypokerengine.api.game import setup_config, start_poker
 import random
 from pypokerengine.utils.card_utils import gen_cards, estimate_hole_card_win_rate
 import pandas as pd
+from sqlalchemy import create_engine
+
+
 NB_SIMULATION=1000
 class TightConservative(BasePokerPlayer):  # Do not forget to make parent class as "BasePokerPlayer"
 
@@ -15,9 +18,13 @@ class TightConservative(BasePokerPlayer):  # Do not forget to make parent class 
                 hole_card=gen_cards(hole_card),
                 community_card=gen_cards(community_card)
                 )
-        if win_rate >= 2.0 / (self.nb_player):
-            action = valid_actions[1]  # fetch CALL action info
+        if (win_rate >= 2.0 / (self.nb_player)) and (valid_actions[2]['amount']['max'] != -1):
+            action = valid_actions[2]  # fetch CALL action info
             bet = action['amount']
+            bet = random.uniform(action['amount']['min'], action['amount']['max'])
+        elif win_rate >= 1.7 / (self.nb_player):
+        	action = valid_actions[1]  # fetch CALL action info
+        	bet = action['amount']
         else:
             action = valid_actions[0]  # fetch FOLD action info
             bet = action['amount']
@@ -50,9 +57,12 @@ class TightAggressive(BasePokerPlayer):  # Do not forget to make parent class as
                 hole_card=gen_cards(hole_card),
                 community_card=gen_cards(community_card)
                 )
-        if win_rate >= 1.5 / self.nb_player:
+        if (win_rate >= 1.5 / self.nb_player) and (valid_actions[2]['amount']['max'] != -1):
             action = valid_actions[2]  # fetch raise action info
             bet = action['amount']['max']*0.75
+        elif (win_rate >= 1/self.nb_player):
+        	action = valid_actions[1]
+        	bet = action['amount']
         else:
             action = valid_actions[0]  # fetch FOLD action info
             bet = action['amount']
@@ -86,7 +96,7 @@ class LooseAggressive(BasePokerPlayer):
                 hole_card=gen_cards(hole_card),
                 community_card=gen_cards(community_card)
                 )
-        if win_rate >= 1.0 / self.nb_player:
+        if (win_rate >= 1.0 / self.nb_player) and (valid_actions[2]['amount']['max'] != -1):
             action = valid_actions[2]  # fetch raise action info
             bet = action['amount']['max']*0.75
         elif win_rate >= 1.0/ (self.nb_player*2):
@@ -123,7 +133,7 @@ class LooseConservative(BasePokerPlayer):
                 hole_card=gen_cards(hole_card),
                 community_card=gen_cards(community_card)
                 )
-        if win_rate >= 1.0 / self.nb_player:
+        if (win_rate >= 1.0 / self.nb_player) and (valid_actions[2]['amount']['max'] != -1):
             action = valid_actions[2]  # fetch raise action info
             bet = action['amount']['min']*1.25
         elif win_rate >= 1.0/ (self.nb_player*2):
@@ -223,10 +233,15 @@ class our_bot(BasePokerPlayer):
                 hole_card=gen_cards(hole_card),
                 community_card=gen_cards(community_card)
                 )
-        if win_rate >= max_of_list:
+        
+
+        # Make sure bot is able to raise by valid amount, then select within range
+        if (win_rate >= max_of_list) and (valid_actions[2]['amount']['max'] != -1): 
             action = valid_actions[2]  # fetch raise action info
-            bet = stack*((random.randint(40,60)/100)*self.raise_percent)
-        elif win_rate >= (max_of_list*0.75):
+            bet = random.uniform(action['amount']['min'], action['amount']['min'] * (action['amount']['min'] * self.raise_percent))
+            if bet > action['amount']['max']:
+            	bet = action['amount']['max']
+        elif (win_rate >= (max_of_list*0.75)) and (stack >= valid_actions[1]['amount']):
             action = valid_actions[1]  # fetch call action info
             bet = action['amount']
         else:
@@ -266,10 +281,14 @@ class our_bot(BasePokerPlayer):
     def receive_round_result_message(self, winners, hand_info, round_state):
         pass
 
+sql_engine = create_engine('sqlite:///playerdata.db', echo=False)
+connection = sql_engine.raw_connection()
+
 total_stack = 10000*8
 world_results = []
-for world in range(4):
+for world in range(2):
 
+    print("W BEGIN")
     config = setup_config(max_round=20, initial_stack=10000, small_blind_amount=20)
     config.register_player(name="TightConservative", algorithm=TightConservative())
     config.register_player(name="LooseAgggressive", algorithm=LooseAggressive())
@@ -302,7 +321,8 @@ for world in range(4):
     freq_factor = {}
     raise_percent = {}
 
-    for evolution in range(10):
+    for evolution in range(1):
+        print("BEGINNING EVOLUTION")
         agg_factor[1] =  game_result['aggressiveness_raise_prob_factor'].sum()
         freq_factor[1] = game_result['frequency_call_factor'].sum()
         raise_percent[1] = game_result['raise_percent'].sum()
@@ -355,5 +375,8 @@ for world in range(4):
         game_result['raise_percent'] = game_result['raise_percent'] * game_result['win_factor']
 
         print(game_result)
+        game_result.to_sql('data', connection,index=False, if_exists='append')
 
     world_results.append(game_result)
+
+
