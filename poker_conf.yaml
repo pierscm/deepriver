@@ -1,0 +1,19 @@
+ai_players:
+- name: TightConservative
+  path: C:\Users\Dgoni\Documents\pokerbot\deepriver\TightConservative.py
+- name: LooseAggressive
+  path: C:\Users\Dgoni\Documents\pokerbot\deepriver\LooseAggressive.py
+- name: TightAggressive
+  path: C:\Users\Dgoni\Documents\pokerbot\deepriver\TightAggressive.py
+- name: LooseConservative
+  path: C:\Users\Dgoni\Documents\pokerbot\deepriver\LooseConservative.py
+- name: LooseAggressive
+  path: C:\Users\Dgoni\Documents\pokerbot\deepriver\LooseAggressive.py
+- name: OurBot
+  path: C:\Users\Dgoni\Documents\pokerbot\deepriver\OurBot.py
+ante: 10
+blind_structure: null
+initial_stack: 1000
+max_round: 10
+small_blind: 10
+

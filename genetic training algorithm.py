@@ -28,7 +28,7 @@ class TightConservative(BasePokerPlayer):  # Do not forget to make parent class 
         else:
             action = valid_actions[0]  # fetch FOLD action info
             bet = action['amount']
-        print("Tight Conservative: ", hole_card, "; Prob: ", win_rate)
+        #print("Tight Conservative: ", hole_card, "; Prob: ", win_rate)
         return action['action'], bet
 
     def receive_game_start_message(self, game_info):
@@ -66,7 +66,7 @@ class TightAggressive(BasePokerPlayer):  # Do not forget to make parent class as
         else:
             action = valid_actions[0]  # fetch FOLD action info
             bet = action['amount']
-        print("Tight Aggressive: ", hole_card, "; Prob: ", win_rate)
+        #print("Tight Aggressive: ", hole_card, "; Prob: ", win_rate)
         return action['action'], bet
 
     def receive_game_start_message(self, game_info):
@@ -105,7 +105,7 @@ class LooseAggressive(BasePokerPlayer):
         else:
             action = valid_actions[0]  # fetch FOLD action info
             bet = action['amount']
-        print("Loose Aggressive: ", hole_card, "; Prob: ", win_rate)
+        #print("Loose Aggressive: ", hole_card, "; Prob: ", win_rate)
         return action['action'], bet
 
     def receive_game_start_message(self, game_info):
@@ -142,7 +142,7 @@ class LooseConservative(BasePokerPlayer):
         else:
             action = valid_actions[1]  # fetch Call action info
             bet = action['amount']
-        print("Loose Conservative: ", hole_card, "; Prob: ", win_rate)
+        #print("Loose Conservative: ", hole_card, "; Prob: ", win_rate)
         return action['action'], bet
 
     def receive_game_start_message(self, game_info):
@@ -162,12 +162,15 @@ class LooseConservative(BasePokerPlayer):
 
 opp_model = []
 
+
 class our_bot(BasePokerPlayer):
 
-    def __init__(self, aggressiveness_raise_prob_factor=1, frequency_call_factor=1, raise_percent=1, name='ourbot'):
+    def __init__(self, aggressiveness_raise_prob_factor=1, frequency_call_factor=1, raise_percent=1, raise_prob=1, name='ourbot'):
         self.aggressiveness_raise_prob_factor = aggressiveness_raise_prob_factor
         self.frequency_call_factor = frequency_call_factor
         self.raise_percent = raise_percent
+        self.raise_prob = raise_prob
+        #self.call_prob = call_prob
         self.name = name
 
     def model_dict(self, round_state):
@@ -207,7 +210,8 @@ class our_bot(BasePokerPlayer):
             self.opponent_model[x]['probability']=1/self.nb_player
             #THIS IS WAY TO SIMPLE!
             if self.opponent_model[x]['raise_this_round']>0:
-                self.opponent_model[x]['probability'] += (1-self.opponent_model[x]['aggressiveness']*self.aggressiveness_raise_prob_factor)*self.opponent_model[x]['probability']
+                self.opponent_model[x]['probability'] += (1-self.opponent_model[x]['aggressiveness']*self.aggressiveness_raise_prob_factor)\
+                                                         *self.opponent_model[x]['probability']
             if self.opponent_model[x]['call_this_round']>0:
                 self.opponent_model[x]['probability'] += ((1 - self.opponent_model[x]['frequency']) * \
                                                          self.opponent_model[x]['probability'])*self.frequency_call_factor
@@ -225,7 +229,7 @@ class our_bot(BasePokerPlayer):
         prob_list = output['probability_list']
         stack = output['stack'] #how to access this?
         max_of_list = max(prob_list)
-        print('Our Bot Estimated max_prob', max_of_list)
+        #print('Our Bot Estimated max_prob', max_of_list)
         community_card = round_state['community_card']
         win_rate = estimate_hole_card_win_rate(
                 nb_simulation=NB_SIMULATION,
@@ -233,21 +237,21 @@ class our_bot(BasePokerPlayer):
                 hole_card=gen_cards(hole_card),
                 community_card=gen_cards(community_card)
                 )
-        
+
 
         # Make sure bot is able to raise by valid amount, then select within range
-        if (win_rate >= max_of_list) and (valid_actions[2]['amount']['max'] != -1): 
+        if (win_rate >= max_of_list*self.raise_prob) and (valid_actions[2]['amount']['max'] != -1):
             action = valid_actions[2]  # fetch raise action info
             bet = random.uniform(action['amount']['min'], action['amount']['min'] * (action['amount']['min'] * self.raise_percent))
             if bet > action['amount']['max']:
             	bet = action['amount']['max']
-        elif (win_rate >= (max_of_list*0.75)) and (stack >= valid_actions[1]['amount']):
+        elif (win_rate >= (max_of_list*0.8)) and (stack >= valid_actions[1]['amount']):
             action = valid_actions[1]  # fetch call action info
             bet = action['amount']
         else:
             action = valid_actions[0]  # fetch FOLD action info
             bet = action['amount']
-        print("Our Bot: ", hole_card, "; Prob: ", win_rate)
+        print(self.opponent_model)
         return action['action'], bet
 
     def receive_game_start_message(self, game_info):
@@ -272,6 +276,7 @@ class our_bot(BasePokerPlayer):
         for x in range(len(seats)):
             self.opponent_model[seats[x]['uuid']]['stack'] = seats[x]['stack']
         opp_model.append(self.opponent_model)
+
     def receive_street_start_message(self, street, round_state):
         pass
 
@@ -281,13 +286,15 @@ class our_bot(BasePokerPlayer):
     def receive_round_result_message(self, winners, hand_info, round_state):
         pass
 
+
 sql_engine = create_engine('sqlite:///playerdata.db', echo=False)
 connection = sql_engine.raw_connection()
 
+
 total_stack = 10000*8
 world_results = []
-for world in range(2):
-
+for world in range(3):
+    GameNumber = 0
     print("W BEGIN")
     config = setup_config(max_round=20, initial_stack=10000, small_blind_amount=20)
     config.register_player(name="TightConservative", algorithm=TightConservative())
@@ -298,85 +305,119 @@ for world in range(2):
     agg = [(random.randint(5,300)/100), (random.randint(5,300)/100), (random.randint(5,300)/100), (random.randint(5,300)/100)]
     freq = [(random.randint(5,300)/100), (random.randint(5,300)/100), (random.randint(5,300)/100), (random.randint(5,300)/100)]
     rand_raise = [(random.randint(5,300)/100), (random.randint(5,300)/100), (random.randint(5,300)/100), (random.randint(5,300)/100)]
+    raise_prob = [(random.randint(80,150)/100),(random.randint(80,150)/100),(random.randint(80,150)/100),(random.randint(80,150)/100)]
+    #call_prob = [(random.randint(5,80)/100),(random.randint(5,80)/100),(random.randint(5,80)/100),(random.randint(5,80)/100), ]
 
-    config.register_player(name="ourbot1", algorithm=our_bot(aggressiveness_raise_prob_factor=agg[0], frequency_call_factor=freq[0], raise_percent=rand_raise[0], name="ourbot1"))
-    config.register_player(name="ourbot2", algorithm=our_bot(aggressiveness_raise_prob_factor=agg[1], frequency_call_factor=freq[1], raise_percent=rand_raise[1], name="ourbot2"))
-    config.register_player(name="ourbot3", algorithm=our_bot(aggressiveness_raise_prob_factor=agg[2], frequency_call_factor=freq[2], raise_percent=rand_raise[2], name="ourbot3"))
-    config.register_player(name="ourbot4", algorithm=our_bot(aggressiveness_raise_prob_factor=agg[3], frequency_call_factor=freq[3], raise_percent=rand_raise[3], name="ourbot4"))
-    game_result = start_poker(config, verbose=1)
-    game_result = pd.DataFrame.from_dict(game_result['players'])
-    game_result['aggressiveness_raise_prob_factor'] = pd.Series([0,0,0,0,agg[0],agg[1],agg[2],agg[3]])
-    game_result['frequency_call_factor'] = pd.Series([0,0,0,0,freq[0],freq[1],freq[2],freq[3]])
-    game_result['raise_percent'] = pd.Series([0,0,0,0,rand_raise[0],rand_raise[1],rand_raise[2],rand_raise[3]])
 
-    our_bot_stack_total = game_result.ix[4:7]['stack'].sum()
-    game_result['win_factor'] = game_result['stack']/our_bot_stack_total
-    game_result['aggressiveness_raise_prob_factor'] = game_result['aggressiveness_raise_prob_factor'] * game_result['win_factor']
-    game_result['frequency_call_factor'] = game_result['frequency_call_factor'] * game_result['win_factor']
-    game_result['raise_percent'] = game_result['raise_percent'] * game_result['win_factor']
+    config.register_player(name="ourbot1", algorithm=our_bot(aggressiveness_raise_prob_factor=agg[0], frequency_call_factor=freq[0], raise_percent=rand_raise[0], raise_prob=raise_prob[0], name="ourbot1"))
+    config.register_player(name="ourbot2", algorithm=our_bot(aggressiveness_raise_prob_factor=agg[1], frequency_call_factor=freq[1], raise_percent=rand_raise[1], raise_prob=raise_prob[1], name="ourbot2"))
+    config.register_player(name="ourbot3", algorithm=our_bot(aggressiveness_raise_prob_factor=agg[2], frequency_call_factor=freq[2], raise_percent=rand_raise[2], raise_prob=raise_prob[2], name="ourbot3"))
+    config.register_player(name="ourbot4", algorithm=our_bot(aggressiveness_raise_prob_factor=agg[3], frequency_call_factor=freq[3], raise_percent=rand_raise[3], raise_prob=raise_prob[3], name="ourbot4"))
+    game_resulta = start_poker(config, verbose=1)
+    game_resulta = pd.DataFrame.from_dict(game_resulta['players'])
+    game_resulta['aggressiveness_raise_prob_factor'] = pd.Series([0,0,0,0,agg[0],agg[1],agg[2],agg[3]])
+    game_resulta['frequency_call_factor'] = pd.Series([0,0,0,0,freq[0],freq[1],freq[2],freq[3]])
+    game_resulta['raise_percent'] = pd.Series([0,0,0,0,rand_raise[0],rand_raise[1],rand_raise[2],rand_raise[3]])
+    game_resulta['raise_prob'] = pd.Series([0, 0, 0, 0, raise_prob[0],raise_prob[1],raise_prob[2],raise_prob[3]] )
+    #game_resulta['call_prob'] = pd.Series([0, 0, 0, 0, call_prob[0],call_prob[1],call_prob[2],call_prob[3]])
 
-    print(game_result)
+    our_bot_stack_total = game_resulta.ix[4:7]['stack'].sum()
+    game_resulta['win_factor'] = game_resulta['stack']/our_bot_stack_total
+    game_resulta['aggressiveness_raise_prob_factor'] = game_resulta['aggressiveness_raise_prob_factor'] * game_resulta['win_factor']
+    game_resulta['frequency_call_factor'] = game_resulta['frequency_call_factor'] * game_resulta['win_factor']
+    game_resulta['raise_percent'] = game_resulta['raise_percent'] * game_resulta['win_factor']
+    game_resulta['raise_prob'] = game_resulta['raise_prob'] * game_resulta['win_factor']
+    #game_resulta['call_prob'] = game_resulta['call_prob'] * game_resulta['win_factor']
+    game_resulta['game'] = GameNumber
+    print(game_resulta)
+
+    try:
+        game_result = game_result.append(game_resulta)
+    except:
+        game_result = game_resulta
+
 
     agg_factor = {}
     freq_factor = {}
     raise_percent = {}
+    #call_prob = {}
+    raise_prob = {}
 
-    for evolution in range(1):
+    for evolution in range(15):
+        GameNumber+=1
+
         print("BEGINNING EVOLUTION")
-        agg_factor[1] =  game_result['aggressiveness_raise_prob_factor'].sum()
-        freq_factor[1] = game_result['frequency_call_factor'].sum()
-        raise_percent[1] = game_result['raise_percent'].sum()
+        try:
+            agg_factor[1] =  game_resultb['aggressiveness_raise_prob_factor'].sum()
+            freq_factor[1] = game_resultb['frequency_call_factor'].sum()
+            raise_percent[1] = game_resultb['raise_percent'].sum()
+            raise_prob[1] = game_resultb['raise_prob'].sum()
+            #call_prob[1] = game_resultb['call_prob'].sum()
+        except:
+            agg_factor[1] =  game_resulta['aggressiveness_raise_prob_factor'].sum()
+            freq_factor[1] = game_resulta['frequency_call_factor'].sum()
+            raise_percent[1] = game_resulta['raise_percent'].sum()
+            raise_prob[1] = game_resulta['raise_prob'].sum()
+            #call_prob[1] = game_resulta['call_prob'].sum()
         if agg_factor[1] is None:
             agg_factor[1] = 0.1
             freq_factor[1] = 0.1
             raise_percent[1] = 0.1
+            raise_prob[1] = 1
+            #call_prob[1] = 0.8
         for i in range(2,5):
-            agg_factor[i] = agg_factor[1] * (random.randint(50,150)/100)
-            freq_factor[i] = freq_factor[1] * (random.randint(50, 150) / 100)
-            raise_percent[i] = raise_percent[1] * (random.randint(50, 150) / 100)
-
+            agg_factor[i] = agg_factor[1] * (random.randint(75,125)/100)
+            freq_factor[i] = freq_factor[1] * (random.randint(75,125) / 100)
+            raise_percent[i] = raise_percent[1] * (random.randint(75,125) / 100)
+            raise_prob[i] = freq_factor[1] * (random.randint(75,125) / 100)
+            #call_prob[i] = raise_percent[1] * (random.randint(75,125) / 100)
         config = setup_config(max_round=20, initial_stack=10000, small_blind_amount=20)
         config.register_player(name="TightConservative", algorithm=TightConservative())
         config.register_player(name="LooseAgggressive", algorithm=LooseAggressive())
         config.register_player(name="TightAggressive", algorithm=TightAggressive())
         config.register_player(name="LooseConservative", algorithm=LooseConservative())
+
         config.register_player(name="ourbot1",
-                               algorithm=our_bot(aggressiveness_raise_prob_factor=agg_factor[1],
-                                                 frequency_call_factor=freq_factor[1],
-                                                 raise_percent=raise_percent[1],
+                               algorithm=our_bot(aggressiveness_raise_prob_factor=agg_factor[1], frequency_call_factor=freq_factor[1],
+                                                 raise_percent=raise_percent[1], raise_prob=raise_prob[1],
                                                  name="ourbot1"))
         config.register_player(name="ourbot2",
-                               algorithm=our_bot(aggressiveness_raise_prob_factor=agg_factor[2],
-                                                 frequency_call_factor=freq_factor[2],
-                                                 raise_percent=raise_percent[2],
+                               algorithm=our_bot(aggressiveness_raise_prob_factor=agg_factor[2], frequency_call_factor=freq_factor[2],
+                                                 raise_percent=raise_percent[2], raise_prob=raise_prob[2],
                                                  name="ourbot2"))
         config.register_player(name="ourbot3",
-                               algorithm=our_bot(aggressiveness_raise_prob_factor=agg_factor[3],
-                                                 frequency_call_factor=freq_factor[3],
-                                                 raise_percent=raise_percent[3],
+                               algorithm=our_bot(aggressiveness_raise_prob_factor=agg_factor[3], frequency_call_factor=freq_factor[3],
+                                                 raise_percent=raise_percent[3], raise_prob=raise_prob[3],
                                                  name="ourbot3"))
         config.register_player(name="ourbot4",
-                               algorithm=our_bot(aggressiveness_raise_prob_factor=agg_factor[4],
-                                                 frequency_call_factor=freq_factor[4],
-                                                 raise_percent=raise_percent[4],
-                                                 name="ourbot4"))  # CHeck for name to get stack
-        game_result = start_poker(config, verbose=1)
-        game_result = pd.DataFrame.from_dict(game_result['players'])
-        game_result['aggressiveness_raise_prob_factor'] = pd.Series([0, 0, 0, 0, agg_factor[1] , agg_factor[2], agg_factor[3], agg_factor[4]])
-        game_result['frequency_call_factor'] = pd.Series([0, 0, 0, 0, freq_factor[1] , freq_factor[2], freq_factor[3], freq_factor[4]])
-        game_result['raise_percent'] = pd.Series([0, 0, 0, 0, raise_percent[1] , raise_percent[2], raise_percent[3], raise_percent[4]])
-
-        our_bot_stack_total = game_result.ix[4:7]['stack'].sum()
-        game_result['win_factor'] = game_result['stack'] / our_bot_stack_total
-
-        game_result['aggressiveness_raise_prob_factor'] = game_result['aggressiveness_raise_prob_factor'] * game_result[
-            'win_factor']
-        game_result['frequency_call_factor'] = game_result['frequency_call_factor'] * game_result['win_factor']
-        game_result['raise_percent'] = game_result['raise_percent'] * game_result['win_factor']
-
-        print(game_result)
-        game_result.to_sql('data', connection,index=False, if_exists='append')
+                               algorithm=our_bot(aggressiveness_raise_prob_factor=agg_factor[4], frequency_call_factor=freq_factor[4],
+                                                 raise_percent=raise_percent[4], raise_prob=raise_prob[4],
+                                                 name="ourbot4"))
+        game_resultb = start_poker(config, verbose=1)
+        game_resultb = pd.DataFrame.from_dict(game_resultb['players'])
+        game_resultb['aggressiveness_raise_prob_factor'] = pd.Series([0, 0, 0, 0, agg_factor[1], agg_factor[2], agg_factor[3], agg_factor[4]])
+        game_resultb['frequency_call_factor'] = pd.Series([0, 0, 0, 0, freq_factor[1], freq_factor[2], freq_factor[3], freq_factor[4]])
+        game_resultb['raise_percent'] = pd.Series(
+            [0, 0, 0, 0, raise_percent[1], raise_percent[2], raise_percent[3], raise_percent[4]])
+        game_resultb['raise_prob'] = pd.Series([0, 0, 0, 0, raise_prob[1], raise_prob[2], raise_prob[3], raise_prob[4]])
+        #game_resultb['call_prob'] = pd.Series([0, 0, 0, 0, call_prob[1], call_prob[2], call_prob[3], call_prob[4] ])
+        print(game_resultb)
+        our_bot_stack_total = game_resultb.ix[4:7]['stack'].sum()
+        game_resultb['win_factor'] = game_resultb['stack'] / our_bot_stack_total
+        game_resultb['aggressiveness_raise_prob_factor'] = game_resultb['aggressiveness_raise_prob_factor'] * game_resultb['win_factor']
+        game_resultb['frequency_call_factor'] = game_resultb['frequency_call_factor'] * game_resultb['win_factor']
+        game_resultb['raise_percent'] = game_resultb['raise_percent'] * game_resultb['win_factor']
+        game_resultb['raise_prob'] = game_resultb['raise_prob'] * game_resultb['win_factor']
+        #game_resultb['call_prob'] = game_resultb['call_prob'] * game_resultb['win_factor']
+        game_resultb['game'] = GameNumber
+        print("finished game.")
+        game_result = game_result.append(game_resultb)
+        #game_result.to_sql('data', connection,index=False, if_exists='replace')
 
     world_results.append(game_result)
+    #import getplayerstats
+
+
+
 
 
