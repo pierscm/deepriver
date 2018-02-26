@@ -86,7 +86,7 @@ class our_bot(BasePokerPlayer):
         # Make sure bot is able to raise by valid amount, then select within range
         if (win_rate >= max_of_list*self.raise_prob) and (valid_actions[2]['amount']['max'] != -1):
             action = valid_actions[2]  # fetch raise action info
-            bet = random.uniform(action['amount']['min'], action['amount']['min'] * (action['amount']['min'] * self.raise_percent))
+            bet = int(random.uniform(action['amount']['min'], action['amount']['min'] * (action['amount']['min'] * self.raise_percent)))
             if bet > action['amount']['max']:
             	bet = int(action['amount']['max'])
         elif (win_rate >= (max_of_list*self.call_prob)) and (stack >= valid_actions[1]['amount']):
@@ -135,5 +135,5 @@ class our_bot(BasePokerPlayer):
         opponent_model_global = opponent_model
 
 def setup_ai():
-    return our_bot(aggressiveness_raise_prob_factor=4.9, frequency_call_factor=0.34,
-                   raise_percent=4.95, raise_prob=0.335, call_prob=5.9174 ,name="Our_Bot")
+    return our_bot(aggressiveness_raise_prob_factor=0.738, frequency_call_factor=1.578,
+                   raise_percent=1.689, raise_prob=1.23, call_prob=0.7 ,name="Our_Bot")

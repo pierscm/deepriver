@@ -1,15 +1,15 @@
 ai_players:
-- name: TightConservative
+- name: TC
   path: C:\Users\Dgoni\Documents\pokerbot\deepriver\TightConservative.py
-- name: LooseAggressive
+- name: LA
   path: C:\Users\Dgoni\Documents\pokerbot\deepriver\LooseAggressive.py
-- name: TightAggressive
+- name: TA
   path: C:\Users\Dgoni\Documents\pokerbot\deepriver\TightAggressive.py
-- name: LooseConservative
+- name: LC
   path: C:\Users\Dgoni\Documents\pokerbot\deepriver\LooseConservative.py
-- name: LooseAggressive
+- name: LA
   path: C:\Users\Dgoni\Documents\pokerbot\deepriver\LooseAggressive.py
-- name: OurBot
+- name: OurBOT
   path: C:\Users\Dgoni\Documents\pokerbot\deepriver\OurBot.py
 ante: 10
 blind_structure: null
