@@ -135,5 +135,5 @@ class our_bot(BasePokerPlayer):
         opponent_model_global = opponent_model
 
 def setup_ai():
-    return our_bot(aggressiveness_raise_prob_factor=0.738, frequency_call_factor=1.578,
-                   raise_percent=1.689, raise_prob=1.23, call_prob=0.7 ,name="Our_Bot")
+    return our_bot(aggressiveness_raise_prob_factor=0.6, frequency_call_factor=0.43,
+                   raise_percent=0.6, raise_prob=1.23, call_prob=0.46 ,name="Our_Bot")

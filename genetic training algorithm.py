@@ -1,3 +1,8 @@
+"""
+In terminal:pypokergui serve poker_conf.yaml --port 8000 --speed moderate
+"""
+
+
 from pypokerengine.players import BasePokerPlayer
 from pypokerengine.api.game import setup_config, start_poker
 import random
@@ -304,10 +309,10 @@ connection = sql_engine.raw_connection()
 
 total_stack = 10000 * 8
 world_results = []
-for world in range(3):
+for world in range(10):
     GameNumber = 0
     print("W BEGIN")
-    config = setup_config(max_round=20, initial_stack=10000, small_blind_amount=20)
+    config = setup_config(max_round=10, initial_stack=10000, small_blind_amount=20)
     config.register_player(name="TightConservative", algorithm=TightConservative())
     config.register_player(name="LooseAgggressive", algorithm=LooseAggressive())
     config.register_player(name="TightAggressive", algorithm=TightAggressive())
@@ -382,7 +387,7 @@ for world in range(3):
     # call_prob = {}
     raise_prob = {}
 
-    for evolution in range(15):
+    for evolution in range(10):
         GameNumber += 1
         print("BEGINNING EVOLUTION")
         agg_factor[1] = agg_fact
@@ -395,7 +400,7 @@ for world in range(3):
             freq_factor[i] = freq_factor[1] * (random.randint(75, 125) / 100)
             raise_percent[i] = raise_percent[1] * (random.randint(75, 125) / 100)
             raise_prob[i] = freq_factor[1] * (random.randint(75, 125) / 100)
-        config = setup_config(max_round=20, initial_stack=10000, small_blind_amount=20)
+        config = setup_config(max_round=10, initial_stack=10000, small_blind_amount=20)
         config.register_player(name="TightConservative", algorithm=TightConservative())
         config.register_player(name="LooseAgggressive", algorithm=LooseAggressive())
         config.register_player(name="TightAggressive", algorithm=TightAggressive())
