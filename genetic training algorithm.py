@@ -24,11 +24,14 @@ class TightConservative(BasePokerPlayer):  # Do not forget to make parent class 
             hole_card=gen_cards(hole_card),
             community_card=gen_cards(community_card)
         )
-        if (win_rate >= 2.0 / (self.nb_player)) and (valid_actions[2]['amount']['max'] != -1):
+
+        ex_win_rate = 1 / self.nb_player
+
+        if (win_rate / ex_win_rate >= 1.8) and (valid_actions[2]['amount']['max'] != -1):
             action = valid_actions[2]  # fetch CALL action info
             bet = action['amount']
             bet = random.uniform(action['amount']['min'], action['amount']['max'])
-        elif win_rate >= 1.7 / (self.nb_player):
+        elif win_rate / ex_win_rate > 1.18:
             action = valid_actions[1]  # fetch CALL action info
             bet = action['amount']
         else:
@@ -64,10 +67,12 @@ class TightAggressive(BasePokerPlayer):  # Do not forget to make parent class as
             hole_card=gen_cards(hole_card),
             community_card=gen_cards(community_card)
         )
-        if (win_rate >= 1.5 / self.nb_player) and (valid_actions[2]['amount']['max'] != -1):
+
+        ex_win_rate = 1 / self.nb_player
+        if (win_rate / ex_win_rate >= 1.3) and (valid_actions[2]['amount']['max'] != -1):
             action = valid_actions[2]  # fetch raise action info
             bet = action['amount']['max'] * 0.75
-        elif (win_rate >= 1 / self.nb_player):
+        elif (win_rate / ex_win_rate > 1.18):
             action = valid_actions[1]
             bet = action['amount']
         else:
@@ -104,10 +109,12 @@ class LooseAggressive(BasePokerPlayer):
             hole_card=gen_cards(hole_card),
             community_card=gen_cards(community_card)
         )
-        if (win_rate >= 1.0 / self.nb_player) and (valid_actions[2]['amount']['max'] != -1):
+        ex_win_rate = 1 / self.nb_player
+
+        if (win_rate / ex_win_rate >= 1.3) and (valid_actions[2]['amount']['max'] != -1):
             action = valid_actions[2]  # fetch raise action info
             bet = action['amount']['max'] * 0.75
-        elif win_rate >= 1.0 / (self.nb_player * 2):
+        elif win_rate / ex_win_rate > 1.0:
             action = valid_actions[1]  # fetch CALL action info
             bet = action['amount']
         else:
@@ -142,10 +149,11 @@ class LooseConservative(BasePokerPlayer):
             hole_card=gen_cards(hole_card),
             community_card=gen_cards(community_card)
         )
-        if (win_rate >= 1.0 / self.nb_player) and (valid_actions[2]['amount']['max'] != -1):
+        ex_win_rate = 1 / self.nb_player
+        if (win_rate / ex_win_rate >= 1.8) and (valid_actions[2]['amount']['max'] != -1):
             action = valid_actions[2]  # fetch raise action info
             bet = action['amount']['min'] * 1.25
-        elif win_rate >= 1.0 / (self.nb_player * 2):
+        elif win_rate / ex_win_rate > 1.0:
             action = valid_actions[1]  # fetch FOLD action info
             bet = action['amount']
         else:
