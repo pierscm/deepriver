@@ -16,10 +16,11 @@ class TightAggressive(BasePokerPlayer):  # Do not forget to make parent class as
                 hole_card=gen_cards(hole_card),
                 community_card=gen_cards(community_card)
                 )
-        if (win_rate >= 1.5 / self.nb_player) and (valid_actions[2]['amount']['max'] != -1):
+        ex_win_rate = 1 / self.nb_player
+        if (win_rate / ex_win_rate >= 1.3) and (valid_actions[2]['amount']['max'] != -1):
             action = valid_actions[2]  # fetch raise action info
             bet = int(action['amount']['max']*0.75)
-        elif (win_rate >= 1/self.nb_player):
+        elif (win_rate / ex_win_rate > 1.18):
         	action = valid_actions[1]
         	bet = int(action['amount'])
         else:

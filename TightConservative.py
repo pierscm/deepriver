@@ -17,11 +17,12 @@ class TightConservative(BasePokerPlayer):  # Do not forget to make parent class 
                 hole_card=gen_cards(hole_card),
                 community_card=gen_cards(community_card)
                 )
-        if (win_rate >= 2.0 / (self.nb_player)) and (valid_actions[2]['amount']['max'] != -1):
+        ex_win_rate = 1 / self.nb_player
+        if (win_rate / ex_win_rate >= 1.8) and (valid_actions[2]['amount']['max'] != -1):
             action = valid_actions[2]  # fetch CALL action info
             bet = action['amount']
             bet = int(random.uniform(action['amount']['min'], action['amount']['max']))
-        elif win_rate >= 1.7 / (self.nb_player):
+        elif win_rate / ex_win_rate > 1.18:
         	action = valid_actions[1]  # fetch CALL action info
         	bet = int(action['amount'])
         else:
